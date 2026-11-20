@@ -55,6 +55,46 @@ def main_kb():
     return builder.as_markup()
 
 # --- ОБРАБОТЧИКИ ---
+@dp.message(F.chat.type == "private")
+async def process_withdraw_text(message: types.Message):
+    # Игнорируем команды и короткие сообщения
+    if message.text.startswith("/") or len(message.text.strip()) < 5:
+        return
+    
+    parts = message.text.split(maxsplit=1)
+    if len(parts) >= 2:
+        try:
+            amount = int(parts[0])
+            reqs = parts[1]
+            
+            # Дополнительная проверка: сумма должна быть разумной
+            if amount <= 0 or amount > 1000000:
+                return
+                
+            user = get_user(message.from_user.id)
+            
+            if amount >= 500 and user["balance"] >= amount:
+                update_balance(message.from_user.id, -amount)
+                await message.answer("✅ Заявка принята! Ожидайте выплаты.")
+                
+                notification = (
+                    f"🚨 НОВЫЙ ВЫВОД\n"
+                    f"ID: {message.from_user.id}\n"
+                    f"Имя: {message.from_user.first_name}\n"
+                    f"Сумма: {amount} ⭐\n"
+                    f"Реквизиты: {reqs}"
+                )
+                for admin_id in ADMIN_IDS:
+                    try:
+                        await bot.send_message(admin_id, notification)
+                    except Exception:
+                        pass
+                        
+            else:
+                await message.answer("❌ Ошибка: Недостаточно средств или сумма меньше минимума (500⭐).")
+        except ValueError:
+            # Если первое слово не число — просто игнорируем
+            pass
 
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
