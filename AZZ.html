@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zombi 777</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #050505;
+            --card: #121212;
+            --neon: #39ff14;
+            --blood: #ff003c;
+            --gold: #ffd700;
+            --text: #eee;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            margin: 0; padding: 15px;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 50% 0%, #1a2a1a 0%, #000 70%);
+        }
+        
+        /* Эффекты */
+        .glitch { position: relative; color: var(--neon); font-weight: bold; }
+        .glitch::before, .glitch::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch::before { left: 2px; text-shadow: -1px 0 red; clip: rect(24px, 550px, 90px, 0); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+        .glitch::after { left: -2px; text-shadow: -1px 0 blue; clip: rect(85px, 550px, 140px, 0); animation: glitch-anim 2.5s infinite linear alternate-reverse; }
+        @keyframes glitch-anim { 0% { clip: rect(10px, 9999px, 30px, 0); } 100% { clip: rect(80px, 9999px, 100px, 0); } }
+        @keyframes glitch-anim-2 { 0% { clip: rect(60px, 9999px, 80px, 0); } 100% { clip: rect(10px, 9999px, 50px, 0); } }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 32px; margin-bottom: 5px; }
+        
+        .stats-bar {
+            display: flex; justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            padding: 10px; border-radius: 10px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        .stat-item { text-align: center; }
+        .stat-val { font-size: 18px; font-weight: bold; color: var(--neon); }
+        .stat-label { font-size: 10px; color: #888; }
+
+        .games-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        }
+        .game-card {
+            background: var(--card);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: 0.2s;
+            cursor: pointer;
+            position: relative; overflow: hidden;
+        }
+        .game-card:hover { border-color: var(--neon); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(57,255,20,0.2); }
+        .game-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+        .game-name { font-size: 13px; font-weight: bold; }
+        .game-desc { font-size: 9px; color: #666; margin-top: 4px; }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal.active { display: flex; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-box {
+            width: 90%; max-width: 400px;
+            background: #111; border: 2px solid var(--neon);
+            border-radius: 15px; padding: 20px;
+            text-align: center; position: relative;
+            box-shadow: 0 0 30px rgba(57,255,20,0.1);
+        }
+        .close-btn { position: absolute; top: 10px; right: 15px; color: #555; font-size: 24px; cursor: pointer; }
+        
+        .game-screen {
+ height: 120px; background: #000; border-radius: 10px;
+            margin: 15px 0; display: flex; align-items: center; justify-content: center;
+            font-size: 40px; border: 1px solid #333; position: relative;
+        }
+        
+        .controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        input[type="number"] {
+            background: #222; border: 1px solid #444; color: white;
+            padding: 8px; border-radius: 5px; width: 80px; text-align: center;
+        }
+        .btn-play {
+            background: var(--neon); color: black; border: none;
+            padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 10px var(--neon);
+        }
+        .btn-play:disabled { background: #444; box-shadow: none; }
+        
+        .result { margin-top: 10px; font-size: 14px; min-height: 20px; font-weight: bold; }
+        .win { color: var(--neon); text-shadow: 0 0 5px var(--neon); }
+        .lose { color: var(--blood); }
+
+        /* Специфика игр */
+        .crash-graph { width: 100%; height: 100%; position: relative; }
+        .mine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 100px; margin: 0 auto; }
+        .mine-cell { width: 30px; height: 30px; background: #333; border-radius: 4px; cursor: pointer; }
+        .mine-cell.revealed { background: #555; }
+        .mine-cell.boom { background: var(--blood); }
+        .mine-cell.gem { background: var(--neon); }
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo glitch" data-text="ZOMBI 777">ZOMBI 777</div>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item">
+        <div class="stat-val" id="uiBalance">0</div>
+        <div class="stat-label">БАЛАНС ⭐</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-val" style="color:var(--blood)" id="uiJackpot">0</div>
+        <div class="stat-label">СЕЙФ 💣</div>
+    </div>
+</div>
+
+<div class="games-grid">
+    <!-- 1. Слоты -->
+    <div class="game-card" onclick="openGame('slots')">
+        <span class="game-icon">🎰</span>
+        <div class="game-name">Слоты</div>
+        <div class="game-desc">Классика x10</div>
+    </div>
+    <!-- 2. Кости (Бонус) -->
+    <div class="game-card" onclick="openGame('dice')">
+        <span class="game-icon">🎲</span>
+        <div class="game-name">Кости</div>
+        <div class="game-desc">Бесплатно/день</div>
+    </div>
+    <!-- 3. Монетка -->
+    <div class="game-card" onclick="openGame('coin')">
+        <span class="game-icon">🪙</span>
+        <div class="game-name">Монетка</div>
+        <div class="game-desc">Орел/Решка</div>
+    </div>
+    <!-- 4. Сейф (Джекпот) -->
+    <div class="game-card" onclick="openGame('safe')">
+        <span class="game-icon">💣</span>
+        <div class="game-name">Сейф</div>
+        <div class="game-desc">Забери банк!</div>
+    </div>
+    <!-- 5. Рулетка -->
+    <div class="game-card" onclick="openGame('roulette')">
+        <span class="game-icon">🎡</span>
+        <div class="game-name">Рулетка</div>
+        <div class="game-desc">Красное/Черное</div>
+    </div>
+    <!-- 6. Краш -->
+    <div class="game-card" onclick="openGame('crash')">
+        <span class="game-icon">🚀</span>
+        <div class="game-name">Краш</div>
+        <div class="game-desc">Успей забрать</div>
+    </div>
+    <!-- 7. Мины -->
+    <div class="game-card" onclick="openGame('mines')">
+        <span class="game-icon">💎</span>
+        <div class="game-name">Мины</div>
+        <div class="game-desc">Найди алмаз</div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div id="modal" class="modal">
+    <div class="modal-box">
+        <div class="close-btn" onclick="closeModal()">✖</div>
+        <h3 id="gTitle" style="color:var(--neon); margin:0;">GAME</h3>
+        
+        <div class="game-screen" id="gScreen">
+            <!-- Контент игры -->
+        </div>
+[20.11.2026 17:16] セレナ! 天使: <div class="controls">
+            <input type="number" id="betInput" value="10">
+            <button class="btn-play" id="playBtn" onclick="playGame()">START</button>
+        </div>
+        <div class="result" id="gResult"></div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Состояние
+    let balance = 0;
+    let jackpot = 5000;
+    let currentGame = null;
+    let isPlaying = false;
+
+    // Загрузка данных (эмуляция, в реале нужно брать из initData или API)
+    // Для демо ставим стартовый баланс
+    balance = 100; 
+    updateUI();
+
+    function updateUI() {
+        document.getElementById('uiBalance').innerText = balance;
+        document.getElementById('uiJackpot').innerText = jackpot;
+    }
+
+    function openGame(type) {
+        currentGame = type;
+        const modal = document.getElementById('modal');
+        const screen = document.getElementById('gScreen');
+        const title = document.getElementById('gTitle');
+        const betInput = document.getElementById('betInput');
+        const result = document.getElementById('gResult');
+        
+        modal.classList.add('active');
+        result.innerText = "";
+        betInput.disabled = false;
+        betInput.value = 10;
+        screen.innerHTML = "";
+        isPlaying = false;
+
+        const games = {
+            'slots': { name: "🎰 Слоты", icon: "🍒 🍋 🍇" },
+            'dice': { name: "🎲 Кости", icon: "🎲" },
+            'coin': { name: "🪙 Монетка", icon: "❓" },
+            'safe': { name: "💣 СЕЙФ", icon: "🔒" },
+            'roulette': { name: "🎡 Рулетка", icon: "🔴⚫" },
+            'crash': { name: "🚀 Краш", icon: "1.00x" },
+            'mines': { name: "💎 Мины", icon: "Grid" }
+        };
+
+        title.innerText = games[type].name;
+        
+        // Спец логика для костей (бонус)
+        if (type === 'dice') {
+            // Проверка времени (упрощено)
+            const last = localStorage.getItem('last_dice_bonus');
+            const now = Date.now();
+            if (!last || (now - last > 86400000)) {
+                betInput.value = 0;
+                betInput.disabled = true;
+                result.innerHTML = "<span style='color:yellow'>🎁 Бесплатная попытка!</span>";
+            }
+        }
+        
+        // Рендер специфичных элементов
+        if (type === 'mines') {
+            let grid = '<div class="mine-grid">';
+            for(let i=0; i<9; i++) grid += <div class="mine-cell" id="m${i}" onclick="clickMine(${i})"></div>;
+            grid += '</div>';
+            screen.innerHTML = grid;
+            betInput.value = 20;
+        } else if (type === 'crash') {
+            screen.innerHTML = '<div style="font-size:30px; color:white;">1.00x</div>';
+        } else {
+            screen.innerHTML = games[type].icon;
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('active');
+    }
+
+    function playGame() {
+        if (isPlaying) return;
+        
+        const bet = parseInt(document.getElementById('betInput').value);
+        const isFree = (currentGame === 'dice' && bet === 0);
+        
+        if (!isFree && balance < bet) {
+            alert("Мало звезд!"); return;
+        }
+
+        if (!isFree) {
+            balance -= bet;
+            updateUI();
+        }
+
+        isPlaying = true;
+        document.getElementById('playBtn').disabled = true;
+        document.getElementById('gResult').innerText = "...";
+
+        // ЛОГИКА ИГР (С заниженным шансом победы)
+        setTimeout(() => {
+            let win = 0;
+            let msg = "";
+            let visual = "";
+
+            // 1. СЛОТЫ (Шанс 25%)
+            if (currentGame === 'slots') {
+                const s = ['🍒','🍋','🍇','💀','7️⃣'];
+                const r1 = s[Math.floor(Math.random()*s.length)];
+ const r2 = s[Math.floor(Math.random()*s.length)];
+                const r3 = s[Math.floor(Math.random()*s.length)];
+                visual = ${r1} ${r2} ${r3};
+                
+                if (r1===r2 && r2===r3) win = bet * 10;
+                else if (r1===r2 || r2===r3) win = bet * 2;
+            }
+            
+            // 2. КОСТИ (Шанс 40%)
+            else if (currentGame === 'dice') {
+                const roll = Math.floor(Math.random() * 6) + 1;
+                visual = 🎲 ${roll};
+                if (roll >= 4) {
+                    win = isFree ? 15 : bet * 1.8; // Чуть меньше чем x2
+                    if(isFree) localStorage.setItem('last_dice_bonus', Date.now());
+                }
+            }
+
+            // 3. МОНЕТКА (Шанс 45%)
+            else if (currentGame === 'coin') {
+                const side = Math.random() > 0.5 ? "Орел" : "Решка";
+                visual = side === "Орел" ? "🦅" : "🪙";
+                if (Math.random() < 0.45) win = bet * 1.9;
+            }
+
+            // 4. СЕЙФ (Джекпот)
+            else if (currentGame === 'safe') {
+                jackpot += Math.floor(bet * 0.1); // 10% в банк
+                visual = "💣";
+                // Шанс 3% на джекпот, 30% на малый выигрыш
+                const luck = Math.random();
+                if (luck < 0.03) {
+                    win = jackpot;
+                    jackpot = 1000; // Сброс
+                    visual = "💰💰💰";
+                    msg = "JACKPOT!!!";
+                } else if (luck < 0.33) {
+                    win = bet * 1.5;
+                    visual = "💵";
+                }
+                updateUI(); // Обновить джекпот
+            }
+
+            // 5. РУЛЕТКА (Шанс 45%)
+            else if (currentGame === 'roulette') {
+                const num = Math.floor(Math.random() * 37); // 0-36
+                const color = num === 0 ? 'Green' : (num % 2 === 0 ? 'Black' : 'Red');
+                visual = <span style="color:${color === 'Red' ? 'red' : (color === 'Black' ? '#aaa' : 'green')}">${num}</span>;
+                // Игрок всегда ставит на Красное для простоты
+                if (color === 'Red') win = bet * 1.9;
+            }
+
+            // 6. КРАШ (Симуляция)
+            else if (currentGame === 'crash') {
+                // Генерируем коэффициент краша. Чаще всего низкий.
+                const crashPoint = (Math.random() * Math.random() * 5) + 1; 
+                // Игрок "забирает" на случайном коэффициенте от 1.1 до 2.0
+                const takePoint = 1.1 + Math.random(); 
+                
+                visual = ${takePoint.toFixed(2)}x;
+                if (takePoint < crashPoint) {
+                    win = Math.floor(bet * takePoint);
+                } else {
+                    visual = CRASH @${crashPoint.toFixed(2)}x;
+                }
+            }
+
+            // 7. МИНЫ (Упрощенно: 1 клик из 9, 2 мины)
+            else if (currentGame === 'mines') {
+                // Просто рандом для демо
+                if (Math.random() > 0.3) {
+                    win = bet * 1.5;
+                    visual = "💎 Found!";
+                } else {
+                    visual = "💥 BOOM";
+                }
+            }
+
+            // ИТОГ
+            const resDiv = document.getElementById('gResult');
+            document.getElementById('gScreen').innerHTML = visual;
+            
+            if (win > 0) {
+                balance += win;
+                resDiv.innerHTML = <span class="win">+${Math.floor(win)} ⭐</span>;
+                tg.HapticFeedback.notificationOccurred('success');
+                // Отправка боту
+                tg.sendData(JSON.stringify({action: "win", amount: Math.floor(win)}));
+            } else {
+                resDiv.innerHTML = <span class="lose">LOSS</span>;
+                tg.HapticFeedback.notificationOccurred('error');
+            }
+            
+            updateUI();
+            isPlaying = false;
+            document.getElementById('playBtn').disabled = false;
+
+        }, 800);
+    }
+function clickMine(id) {
+        if(!isPlaying && currentGame === 'mines') playGame(); // Автостарт при клике
+    }
+</script>
+
+</body>
+</html>
