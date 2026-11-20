@@ -9,7 +9,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = "8647859964:AAFvXgbvIiuTmtAEPRWFkMFS8_Zeaf97p4I"
 ADMIN_IDS = [8624408698, 7088402556] 
-WEBAPP_URL = "https://твоя-ссылка.github.io/index.html" # ⚠️ ЗАМЕНИ НА СВОЮ ССЫЛКУ
+WEBAPP_URL = "https://github.com/selenaandenan/AZZZZ/blob/ac30dbd7b70868f3073d6c9faebbb00a445df3fb/AZZ.html" # ⚠️ ЗАМЕНИ НА СВОЮ ССЫЛКУ
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
