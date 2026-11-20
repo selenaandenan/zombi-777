@@ -85,7 +85,7 @@
         .close-btn { position: absolute; top: 10px; right: 15px; color: #555; font-size: 24px; cursor: pointer; }
         
         .game-screen {
- height: 120px; background: #000; border-radius: 10px;
+            height: 120px; background: #000; border-radius: 10px;
             margin: 15px 0; display: flex; align-items: center; justify-content: center;
             font-size: 40px; border: 1px solid #333; position: relative;
         }
@@ -113,7 +113,6 @@
         .mine-cell.revealed { background: #555; }
         .mine-cell.boom { background: var(--blood); }
         .mine-cell.gem { background: var(--neon); }
-
     </style>
 </head>
 <body>
@@ -187,7 +186,8 @@
         <div class="game-screen" id="gScreen">
             <!-- Контент игры -->
         </div>
-[20.11.2026 17:16] セレナ! 天使: <div class="controls">
+
+        <div class="controls">
             <input type="number" id="betInput" value="10">
             <button class="btn-play" id="playBtn" onclick="playGame()">START</button>
         </div>
@@ -200,14 +200,11 @@
     tg.expand();
     
     // Состояние
-    let balance = 0;
+    let balance = 100; 
     let jackpot = 5000;
     let currentGame = null;
     let isPlaying = false;
 
-    // Загрузка данных (эмуляция, в реале нужно брать из initData или API)
-    // Для демо ставим стартовый баланс
-    balance = 100; 
     updateUI();
 
     function updateUI() {
@@ -244,7 +241,6 @@
         
         // Спец логика для костей (бонус)
         if (type === 'dice') {
-            // Проверка времени (упрощено)
             const last = localStorage.getItem('last_dice_bonus');
             const now = Date.now();
             if (!last || (now - last > 86400000)) {
@@ -257,7 +253,7 @@
         // Рендер специфичных элементов
         if (type === 'mines') {
             let grid = '<div class="mine-grid">';
-            for(let i=0; i<9; i++) grid += <div class="mine-cell" id="m${i}" onclick="clickMine(${i})"></div>;
+            for(let i=0; i<9; i++) grid += `<div class="mine-cell" id="m${i}" onclick="clickMine(${i})"></div>`;
             grid += '</div>';
             screen.innerHTML = grid;
             betInput.value = 20;
@@ -291,19 +287,17 @@
         document.getElementById('playBtn').disabled = true;
         document.getElementById('gResult').innerText = "...";
 
-        // ЛОГИКА ИГР (С заниженным шансом победы)
         setTimeout(() => {
             let win = 0;
-            let msg = "";
             let visual = "";
 
             // 1. СЛОТЫ (Шанс 25%)
             if (currentGame === 'slots') {
                 const s = ['🍒','🍋','🍇','💀','7️⃣'];
                 const r1 = s[Math.floor(Math.random()*s.length)];
- const r2 = s[Math.floor(Math.random()*s.length)];
+                const r2 = s[Math.floor(Math.random()*s.length)];
                 const r3 = s[Math.floor(Math.random()*s.length)];
-                visual = ${r1} ${r2} ${r3};
+                visual = `${r1} ${r2} ${r3}`;
                 
                 if (r1===r2 && r2===r3) win = bet * 10;
                 else if (r1===r2 || r2===r3) win = bet * 2;
@@ -312,9 +306,9 @@
             // 2. КОСТИ (Шанс 40%)
             else if (currentGame === 'dice') {
                 const roll = Math.floor(Math.random() * 6) + 1;
-                visual = 🎲 ${roll};
+                visual = `🎲 ${roll}`;
                 if (roll >= 4) {
-                    win = isFree ? 15 : bet * 1.8; // Чуть меньше чем x2
+                    win = isFree ? 15 : bet * 1.8;
                     if(isFree) localStorage.setItem('last_dice_bonus', Date.now());
                 }
             }
@@ -328,49 +322,43 @@
 
             // 4. СЕЙФ (Джекпот)
             else if (currentGame === 'safe') {
-                jackpot += Math.floor(bet * 0.1); // 10% в банк
+                jackpot += Math.floor(bet * 0.1);
                 visual = "💣";
-                // Шанс 3% на джекпот, 30% на малый выигрыш
                 const luck = Math.random();
                 if (luck < 0.03) {
                     win = jackpot;
-                    jackpot = 1000; // Сброс
+                    jackpot = 1000;
                     visual = "💰💰💰";
-                    msg = "JACKPOT!!!";
                 } else if (luck < 0.33) {
                     win = bet * 1.5;
                     visual = "💵";
                 }
-                updateUI(); // Обновить джекпот
+                updateUI();
             }
 
             // 5. РУЛЕТКА (Шанс 45%)
             else if (currentGame === 'roulette') {
-                const num = Math.floor(Math.random() * 37); // 0-36
+                const num = Math.floor(Math.random() * 37);
                 const color = num === 0 ? 'Green' : (num % 2 === 0 ? 'Black' : 'Red');
-                visual = <span style="color:${color === 'Red' ? 'red' : (color === 'Black' ? '#aaa' : 'green')}">${num}</span>;
-                // Игрок всегда ставит на Красное для простоты
+                visual = `<span style="color:${color === 'Red' ? 'red' : (color === 'Black' ? '#aaa' : 'green')}">${num}</span>`;
                 if (color === 'Red') win = bet * 1.9;
             }
 
             // 6. КРАШ (Симуляция)
             else if (currentGame === 'crash') {
-                // Генерируем коэффициент краша. Чаще всего низкий.
                 const crashPoint = (Math.random() * Math.random() * 5) + 1; 
-                // Игрок "забирает" на случайном коэффициенте от 1.1 до 2.0
                 const takePoint = 1.1 + Math.random(); 
                 
-                visual = ${takePoint.toFixed(2)}x;
+                visual = `${takePoint.toFixed(2)}x`;
                 if (takePoint < crashPoint) {
                     win = Math.floor(bet * takePoint);
                 } else {
-                    visual = CRASH @${crashPoint.toFixed(2)}x;
+                    visual = `CRASH @ ${crashPoint.toFixed(2)}x`;
                 }
             }
 
-            // 7. МИНЫ (Упрощенно: 1 клик из 9, 2 мины)
+            // 7. МИНЫ (Упрощенно)
             else if (currentGame === 'mines') {
-                // Просто рандом для демо
                 if (Math.random() > 0.3) {
                     win = bet * 1.5;
                     visual = "💎 Found!";
@@ -385,12 +373,11 @@
             
             if (win > 0) {
                 balance += win;
-                resDiv.innerHTML = <span class="win">+${Math.floor(win)} ⭐</span>;
+                resDiv.innerHTML = `<span class="win">+${Math.floor(win)} ⭐</span>`;
                 tg.HapticFeedback.notificationOccurred('success');
-                // Отправка боту
                 tg.sendData(JSON.stringify({action: "win", amount: Math.floor(win)}));
             } else {
-                resDiv.innerHTML = <span class="lose">LOSS</span>;
+                resDiv.innerHTML = `<span class="lose">LOSS</span>`;
                 tg.HapticFeedback.notificationOccurred('error');
             }
             
@@ -400,8 +387,9 @@
 
         }, 800);
     }
-function clickMine(id) {
-        if(!isPlaying && currentGame === 'mines') playGame(); // Автостарт при клике
+
+    function clickMine(id) {
+        if(!isPlaying && currentGame === 'mines') playGame();
     }
 </script>
 
