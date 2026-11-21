@@ -7,7 +7,7 @@ from aiogram.types import WebAppInfo, LabeledPrice
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = "8647859964:AAFvXgbvIiuTmtAEPRWFkMFS8_Zeaf97p4I"
+BOT_TOKEN = "8647859964:AAH8Ch_lrHY1_vt0p58tHlqgqzgbRzV4yUA"
 ADMIN_IDS = [8624408698, 7088402556] 
 WEBAPP_URL = "https://github.com/selenaandenan/AZZZZ/blob/ac30dbd7b70868f3073d6c9faebbb00a445df3fb/AZZ.html" # ⚠️ ЗАМЕНИ НА СВОЮ ССЫЛКУ
 
