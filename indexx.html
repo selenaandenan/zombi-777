@@ -534,6 +534,7 @@
             justify-content: center;
             align-items: center;
             margin: 20px 0;
+            flex-wrap: wrap;
         }
 
         .bet-input {
@@ -556,7 +557,7 @@
             outline: none;
         }
 
-        .play-button {
+        .play-button, .cashout-button {
             background: linear-gradient(135deg, var(--neon-green), var(--neon-purple));
             border: none;
             border-radius: 12px;
@@ -572,16 +573,22 @@
             font-family: 'Orbitron', sans-serif;
         }
 
-        .play-button:hover {
+        .cashout-button {
+            background: linear-gradient(135deg, var(--gold), #b8860b);
+            box-shadow: 0 0 25px rgba(255,215,0,0.5);
+            display: none;
+        }
+
+        .play-button:hover, .cashout-button:hover {
             transform: translateY(-3px);
             box-shadow: 0 0 40px rgba(57,255,20,0.8);
         }
 
-        .play-button:active {
+        .play-button:active, .cashout-button:active {
             transform: scale(0.95);
         }
 
-        .play-button:disabled {
+        .play-button:disabled, .cashout-button:disabled {
             background: #333;
             box-shadow: none;
             cursor: not-allowed;
@@ -619,34 +626,39 @@
             75% { transform: translateX(10px); }
         }
 
-        /* Слоты анимация */
+        /* Слоты анимация CS:GO */
         .slots-container {
             display: flex;
             gap: 10px;
             justify-content: center;
+            height: 100%;
+            align-items: center;
         }
 
         .slot-reel {
             width: 60px;
-            height: 80px;
+            height: 100px;
             background: #111;
             border: 2px solid var(--neon-green);
             border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 10px rgba(57,255,20,0.2);
+        }
+
+        .slot-strip {
+            display: flex;
+            flex-direction: column;
+            transition: transform 2.5s cubic-bezier(0.15, 0.85, 0.35, 1.0);
+        }
+
+        .slot-symbol {
+            width: 60px;
+            height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 40px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .slot-reel.spinning {
-            animation: slotSpin 0.1s linear infinite;
-        }
-
-        @keyframes slotSpin {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-100%); }
         }
 
         /* Монетка */
@@ -1006,7 +1018,8 @@
             <div class="game-display" id="gameDisplay">🎮</div>
             <div class="bet-controls">
                 <input type="number" class="bet-input" id="betInput" value="10" min="1">
-                <button class="play-button" id="playBtn" onclick="playGame()">ИГРАТЬ</button>
+                <button class="play-button" id="playBtn" onclick="startGameAction()">ИГРАТЬ</button>
+                <button class="cashout-button" id="cashoutBtn" onclick="cashoutMines()">ЗАБРАТЬ</button>
             </div>
             <div class="result-message" id="resultMsg"></div>
         </div>
@@ -1057,9 +1070,14 @@
 
         let currentGame = null;
         let isPlaying = false;
-        let minesMap = []; // Карта для честных мин
+        
+        // Переменные для мин
+        let minesActive = false;
+        let currentMinesBet = 0;
+        let gemsFound = 0;
+        let minesMap = [];
 
-        // Загрузка данных от бота (через URL параметры)
+        // Загрузка данных от бота
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const botBalance = urlParams.get('balance');
@@ -1068,7 +1086,6 @@
             if (botBalance) profile.balance = parseInt(botBalance);
             if (botUserId) profile.id = botUserId;
             
-            // Данные пользователя Telegram
             if (tg.initDataUnsafe?.user) {
                 profile.name = tg.initDataUnsafe.user.first_name;
             }
@@ -1103,12 +1120,17 @@
             const display = document.getElementById('gameDisplay');
             const betInput = document.getElementById('betInput');
             const resultMsg = document.getElementById('resultMsg');
+            const playBtn = document.getElementById('playBtn');
+            const cashoutBtn = document.getElementById('cashoutBtn');
 
             modal.classList.add('active');
             resultMsg.innerText = '';
             resultMsg.className = 'result-message';
-            document.getElementById('playBtn').disabled = false;
+            playBtn.disabled = false;
+            playBtn.style.display = 'inline-block';
+            cashoutBtn.style.display = 'none';
             isPlaying = false;
+            minesActive = false;
 
             const games = {
                 'slots': { name: '🎰 СЛОТЫ', bet: 20, display: '🍒 🍋 🍇' },
@@ -1123,22 +1145,19 @@
             title.innerText = games[gameType].name;
             betInput.value = games[gameType].bet;
             display.innerHTML = games[gameType].display;
+            betInput.disabled = false;
 
-            // Специфичная логика для костей (бесплатная попытка)
+            // Специфичная логика для костей (бесплатная попытка 1 раз в день)
             if (gameType === 'dice') {
                 const lastBonus = localStorage.getItem('lastDiceBonus');
                 const now = Date.now();
-                // 24 часа = 86400000 мс
-                if (!lastBonus || (now - lastBonus > 86400000)) {
+                if (!lastBonus || (now - parseInt(lastBonus) > 86400000)) {
                     betInput.value = 0;
                     betInput.disabled = true;
                     resultMsg.innerHTML = '<span style="color:var(--gold)">🎁 БЕСПЛАТНАЯ ПОПЫТКА!</span>';
                 } else {
                     betInput.disabled = false;
-                    resultMsg.innerText = '';
                 }
-            } else {
-                betInput.disabled = false;
             }
 
             // Рендер специфичных элементов
@@ -1153,7 +1172,7 @@
             document.getElementById('gameModal').classList.remove('active');
         }
 
-        function playGame() {
+        function startGameAction() {
             if (isPlaying) return;
 
             const betInput = document.getElementById('betInput');
@@ -1175,7 +1194,16 @@
             document.getElementById('resultMsg').innerText = 'Крутим...';
             document.getElementById('gameDisplay').classList.add('spinning');
 
-            tg.HapticFeedback.impactOccurred('medium');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            if (currentGame === 'mines') {
+                // Мины — отдельная логика, не крутим
+                document.getElementById('resultMsg').innerText = 'Выбирай ячейку!';
+                isPlaying = false;
+                document.getElementById('playBtn').disabled = false;
+                document.getElementById('gameDisplay').classList.remove('spinning');
+                return;
+            }
 
             setTimeout(() => {
                 let win = 0;
@@ -1183,18 +1211,43 @@
                 let display = document.getElementById('gameDisplay');
                 let isWin = false;
 
-                // ЖЁСТКАЯ МАТЕМАТИКА
+                // ЖЁСТКАЯ МАТЕМАТИКА (казино в плюсе)
                 if (currentGame === 'slots') {
+                    // CS:GO-стиль: генерируем ленту с финальными символами
                     const symbols = ['🍒', '🍋', '🍇', '💀', '7️⃣'];
-                    const r1 = symbols[Math.floor(Math.random() * symbols.length)];
-                    const r2 = symbols[Math.floor(Math.random() * symbols.length)];
-                    const r3 = symbols[Math.floor(Math.random() * symbols.length)];
-                    visual = `<div class="slots-container"><div class="slot-reel">${r1}</div><div class="slot-reel">${r2}</div><div class="slot-reel">${r3}</div></div>`;
+                    const finalSymbols = [
+                        symbols[Math.floor(Math.random() * symbols.length)],
+                        symbols[Math.floor(Math.random() * symbols.length)],
+                        symbols[Math.floor(Math.random() * symbols.length)]
+                    ];
                     
-                    if (r1 === r2 && r2 === r3) {
+                    let stripHTML = '<div class="slot-strip">';
+                    for(let i=0; i<20; i++) {
+                        stripHTML += `<div class="slot-symbol">${symbols[Math.floor(Math.random() * symbols.length)]}</div>`;
+                    }
+                    finalSymbols.forEach(s => { stripHTML += `<div class="slot-symbol">${s}</div>`; });
+                    stripHTML += '</div>';
+                    
+                    visual = `<div class="slots-container">
+                        <div class="slot-reel">${stripHTML.replace('class="slot-strip"', 'class="slot-strip" id="reel1"')}</div>
+                        <div class="slot-reel">${stripHTML.replace('class="slot-strip"', 'class="slot-strip" id="reel2"')}</div>
+                        <div class="slot-reel">${stripHTML.replace('class="slot-strip"', 'class="slot-strip" id="reel3"')}</div>
+                    </div>`;
+                    
+                    display.innerHTML = visual;
+                    
+                    // Запускаем CS:GO анимацию (плавное замедление)
+                    setTimeout(() => {
+                        document.getElementById('reel1').style.transform = 'translateY(-2000px)';
+                        document.getElementById('reel2').style.transform = 'translateY(-2000px)';
+                        document.getElementById('reel3').style.transform = 'translateY(-2000px)';
+                    }, 50);
+                    
+                    // Проверка выигрыша по финальным символам
+                    if (finalSymbols[0] === finalSymbols[1] && finalSymbols[1] === finalSymbols[2]) {
                         win = bet * 8;
                         isWin = true;
-                    } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+                    } else if (finalSymbols[0] === finalSymbols[1] || finalSymbols[1] === finalSymbols[2] || finalSymbols[0] === finalSymbols[2]) {
                         win = Math.floor(bet * 1.5);
                         isWin = true;
                     }
@@ -1202,9 +1255,9 @@
                 else if (currentGame === 'dice') {
                     const roll = Math.floor(Math.random() * 6) + 1;
                     visual = `<div style="font-size:80px">🎲</div><div style="font-size:30px;margin-top:10px">${roll}</div>`;
-                    // Шанс только на 6 (1/6)
+                    // ШАНС ТОЛЬКО НА 6 (низкий процент)
                     if (roll === 6) {
-                        win = isFree ? 20 : Math.floor(bet * 2);
+                        win = isFree ? 20 : Math.floor(bet * 1.6);
                         isWin = true;
                         if (isFree) localStorage.setItem('lastDiceBonus', Date.now());
                     }
@@ -1251,13 +1304,6 @@
                         visual = `<div class="crash-graph"><div class="crash-multiplier" style="color:var(--blood)">💥 ${crashPoint.toFixed(2)}x</div></div>`;
                     }
                 }
-                else if (currentGame === 'mines') {
-                    // Логика мин обрабатывается кликами, здесь заглушка
-                    isPlaying = false;
-                    document.getElementById('playBtn').disabled = false;
-                    document.getElementById('resultMsg').innerText = 'Выбирай ячейки!';
-                    return;
-                }
 
                 display.innerHTML = visual;
                 display.classList.remove('spinning');
@@ -1268,7 +1314,7 @@
                     profile.wins++;
                     resultMsg.innerHTML = `🎉 +${Math.floor(win)} ⭐`;
                     resultMsg.className = 'result-message win';
-                    tg.HapticFeedback.notificationOccurred('success');
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                     showNotification(`Выигрыш: +${Math.floor(win)} ⭐`, 'success');
                     
                     // Отправка выигрыша боту
@@ -1277,7 +1323,7 @@
                     profile.losses++;
                     resultMsg.innerHTML = '💀 ПРОИГРЫШ';
                     resultMsg.className = 'result-message lose';
-                    tg.HapticFeedback.notificationOccurred('error');
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                     
                     // Отправка проигрыша боту
                     if (!isFree) sendToBot('lose', bet);
@@ -1290,69 +1336,115 @@
             }, 1500);
         }
 
-        // --- ЛОГИКА МИН (ЧЕСТНАЯ) ---
+        // --- ЛОГИКА МИН (ЧЕСТНАЯ, РУЧНАЯ) ---
         function renderMinesGrid() {
             const display = document.getElementById('gameDisplay');
             let html = '<div class="mines-grid">';
-            for(let i=0; i<9; i++) {
-                html += `<div class="mine-cell" id="cell-${i}" onclick="clickMine(${i})">❓</div>`;
+            for (let i = 0; i < 9; i++) {
+                html += `<div class="mine-cell" id="mine${i}" onclick="clickMine(${i})">❓</div>`;
             }
             html += '</div>';
             display.innerHTML = html;
             
-            // Генерируем карту ЗАРАНЕЕ
+            // Генерируем карту мин ЗАРАНЕЕ (честно, 3 мины из 9)
             minesMap = Array(9).fill('gem');
             let minesPlaced = 0;
-            while(minesPlaced < 3) {
+            while (minesPlaced < 3) {
                 let idx = Math.floor(Math.random() * 9);
-                if(minesMap[idx] !== 'bomb') {
+                if (minesMap[idx] !== 'bomb') {
                     minesMap[idx] = 'bomb';
                     minesPlaced++;
                 }
             }
         }
 
-        function clickMine(idx) {
-            if(currentGame !== 'mines' || isPlaying) return;
+        function clickMine(id) {
+            if (currentGame !== 'mines' || minesActive === false && gemsFound === 0) {
+                // Проверка: игра должна быть активна (ставка сделана)
+                if (currentGame !== 'mines') return;
+            }
             
-            const cell = document.getElementById(`cell-${idx}`);
-            if(cell.classList.contains('revealed')) return;
+            const cell = document.getElementById(`mine${id}`);
+            if (cell.classList.contains('revealed')) return;
 
             cell.classList.add('revealed');
             
-            // Проверяем по карте
-            if(minesMap[idx] === 'gem') {
+            // Проверяем по заранее созданной карте (честно!)
+            if (minesMap[id] === 'gem') {
                 cell.classList.add('gem');
                 cell.innerText = '💎';
-                tg.HapticFeedback.impactOccurred('light');
+                gemsFound++;
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                
+                // Показываем кнопку "ЗАБРАТЬ"
+                document.getElementById('cashoutBtn').style.display = 'inline-block';
+                document.getElementById('resultMsg').innerHTML = `<span style="color:var(--neon-green)">Найдено алмазов: ${gemsFound}</span>`;
             } else {
                 cell.classList.add('bomb');
                 cell.innerText = '💣';
-                tg.HapticFeedback.notificationOccurred('error');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 
                 // Показать все мины
                 for (let i = 0; i < 9; i++) {
-                    const c = document.getElementById(`mine${i}`); // Исправлено ID
-                    if(c && !c.classList.contains('revealed')) {
+                    const c = document.getElementById(`mine${i}`);
+                    if (!c.classList.contains('revealed')) {
                         c.classList.add('revealed');
-                        if(minesMap[i] === 'bomb') {
+                        if (minesMap[i] === 'bomb') {
                             c.classList.add('bomb');
                             c.innerText = '💣';
+                        } else {
+                            c.innerText = '💎';
+                            c.style.opacity = '0.3';
                         }
                     }
                 }
                 
                 // Проигрыш
                 const bet = parseInt(document.getElementById('betInput').value);
-                profile.balance -= bet;
                 profile.losses++;
-                updateUI();
-                sendToBot('lose', bet);
                 document.getElementById('resultMsg').innerHTML = '💀 ВЗРЫВ!';
                 document.getElementById('resultMsg').className = 'result-message lose';
+                document.getElementById('cashoutBtn').style.display = 'none';
+                sendToBot('lose', bet);
+                updateUI();
             }
         }
 
+        function cashoutMines() {
+            if (gemsFound === 0) return;
+            
+            const bet = parseInt(document.getElementById('betInput').value);
+            // Формула выигрыша: ставка * (1 + 0.5 за каждый алмаз)
+            let winAmount = Math.floor(bet * (1 + (gemsFound * 0.5)));
+            
+            // Показать все мины
+            for (let i = 0; i < 9; i++) {
+                const c = document.getElementById(`mine${i}`);
+                if (!c.classList.contains('revealed')) {
+                    c.classList.add('revealed');
+                    if (minesMap[i] === 'bomb') {
+                        c.classList.add('bomb');
+                        c.innerText = '💣';
+                    } else {
+                        c.innerText = '💎';
+                        c.style.opacity = '0.3';
+                    }
+                }
+            }
+            
+            profile.balance += winAmount;
+            profile.wins++;
+            document.getElementById('resultMsg').innerHTML = `🎉 +${winAmount} ⭐`;
+            document.getElementById('resultMsg').className = 'result-message win';
+            document.getElementById('cashoutBtn').style.display = 'none';
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            showNotification(`Забрал: +${winAmount} ⭐`, 'success');
+            
+            sendToBot('win', winAmount);
+            updateUI();
+        }
+
+        // --- СВЯЗЬ С БОТОМ ---
         function sendToBot(action, amount) {
             const data = {
                 action: action,
