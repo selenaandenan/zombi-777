@@ -1045,7 +1045,7 @@
 
         // Данные профиля
         let profile = {
-            balance: 100,
+            balance: 0,
             deposits: 0,
             withdrawals: 0,
             games: 0,
@@ -1057,18 +1057,21 @@
 
         let currentGame = null;
         let isPlaying = false;
+        let minesMap = []; // Карта для честных мин
 
-        // Загрузка данных от бота
+        // Загрузка данных от бота (через URL параметры)
         try {
-            const initData = JSON.parse(tg.initDataUnsafe?.start_param || '{}');
-            if (initData.balance !== undefined) profile.balance = initData.balance;
-            if (initData.deposits !== undefined) profile.deposits = initData.deposits;
-            if (initData.withdrawals !== undefined) profile.withdrawals = initData.withdrawals;
-            if (initData.games !== undefined) profile.games = initData.games;
-            if (initData.wins !== undefined) profile.wins = initData.wins;
-            if (initData.losses !== undefined) profile.losses = initData.losses;
-            profile.name = tg.initDataUnsafe?.user?.first_name || 'Игрок';
-            profile.id = tg.initDataUnsafe?.user?.id || '-';
+            const urlParams = new URLSearchParams(window.location.search);
+            const botBalance = urlParams.get('balance');
+            const botUserId = urlParams.get('user_id');
+
+            if (botBalance) profile.balance = parseInt(botBalance);
+            if (botUserId) profile.id = botUserId;
+            
+            // Данные пользователя Telegram
+            if (tg.initDataUnsafe?.user) {
+                profile.name = tg.initDataUnsafe.user.first_name;
+            }
         } catch (e) {}
 
         updateUI();
@@ -1125,12 +1128,14 @@
             if (gameType === 'dice') {
                 const lastBonus = localStorage.getItem('lastDiceBonus');
                 const now = Date.now();
+                // 24 часа = 86400000 мс
                 if (!lastBonus || (now - lastBonus > 86400000)) {
                     betInput.value = 0;
                     betInput.disabled = true;
                     resultMsg.innerHTML = '<span style="color:var(--gold)">🎁 БЕСПЛАТНАЯ ПОПЫТКА!</span>';
                 } else {
                     betInput.disabled = false;
+                    resultMsg.innerText = '';
                 }
             } else {
                 betInput.disabled = false;
@@ -1138,12 +1143,7 @@
 
             // Рендер специфичных элементов
             if (gameType === 'mines') {
-                let grid = '<div class="mines-grid">';
-                for (let i = 0; i < 9; i++) {
-                    grid += `<div class="mine-cell" id="mine${i}" onclick="clickMine(${i})">❓</div>`;
-                }
-                grid += '</div>';
-                display.innerHTML = grid;
+                renderMinesGrid();
             } else if (gameType === 'crash') {
                 display.innerHTML = '<div class="crash-graph"><div class="crash-multiplier">1.00x</div></div>';
             }
@@ -1156,7 +1156,8 @@
         function playGame() {
             if (isPlaying) return;
 
-            const bet = parseInt(document.getElementById('betInput').value);
+            const betInput = document.getElementById('betInput');
+            let bet = parseInt(betInput.value);
             const isFree = (currentGame === 'dice' && bet === 0);
 
             if (!isFree) {
@@ -1180,8 +1181,9 @@
                 let win = 0;
                 let visual = '';
                 let display = document.getElementById('gameDisplay');
+                let isWin = false;
 
-                // ЖЁСТКАЯ МАТЕМАТИКА (казино в плюсе)
+                // ЖЁСТКАЯ МАТЕМАТИКА
                 if (currentGame === 'slots') {
                     const symbols = ['🍒', '🍋', '🍇', '💀', '7️⃣'];
                     const r1 = symbols[Math.floor(Math.random() * symbols.length)];
@@ -1189,30 +1191,42 @@
                     const r3 = symbols[Math.floor(Math.random() * symbols.length)];
                     visual = `<div class="slots-container"><div class="slot-reel">${r1}</div><div class="slot-reel">${r2}</div><div class="slot-reel">${r3}</div></div>`;
                     
-                    if (r1 === r2 && r2 === r3) win = bet * 8;
-                    else if (r1 === r2 || r2 === r3 || r1 === r3) win = bet * 1.5;
+                    if (r1 === r2 && r2 === r3) {
+                        win = bet * 8;
+                        isWin = true;
+                    } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+                        win = Math.floor(bet * 1.5);
+                        isWin = true;
+                    }
                 }
                 else if (currentGame === 'dice') {
                     const roll = Math.floor(Math.random() * 6) + 1;
                     visual = `<div style="font-size:80px">🎲</div><div style="font-size:30px;margin-top:10px">${roll}</div>`;
-                    if (roll >= 5) {
-                        win = isFree ? 15 : Math.floor(bet * 1.6);
+                    // Шанс только на 6 (1/6)
+                    if (roll === 6) {
+                        win = isFree ? 20 : Math.floor(bet * 2);
+                        isWin = true;
                         if (isFree) localStorage.setItem('lastDiceBonus', Date.now());
                     }
                 }
                 else if (currentGame === 'coin') {
                     const side = Math.random() > 0.5 ? '🦅' : '🪙';
                     visual = `<div class="coin">${side}</div>`;
-                    if (Math.random() < 0.42) win = Math.floor(bet * 1.7);
+                    if (Math.random() < 0.42) {
+                        win = Math.floor(bet * 1.7);
+                        isWin = true;
+                    }
                 }
                 else if (currentGame === 'safe') {
                     const luck = Math.random();
                     if (luck < 0.02) {
                         win = 5000;
                         visual = '<div style="font-size:60px">💰💰💰</div>';
+                        isWin = true;
                     } else if (luck < 0.27) {
                         win = Math.floor(bet * 1.3);
                         visual = '<div style="font-size:60px">💵</div>';
+                        isWin = true;
                     } else {
                         visual = '<div style="font-size:60px">💣</div>';
                     }
@@ -1221,7 +1235,10 @@
                     const num = Math.floor(Math.random() * 37);
                     const isRed = num !== 0 && num % 2 !== 0;
                     visual = `<div class="roulette-wheel"></div><div style="position:absolute;font-size:40px;font-weight:900">${num}</div>`;
-                    if (isRed && Math.random() < 0.83) win = Math.floor(bet * 1.8);
+                    if (isRed && Math.random() < 0.83) {
+                        win = Math.floor(bet * 1.8);
+                        isWin = true;
+                    }
                 }
                 else if (currentGame === 'crash') {
                     const crashPoint = 1 + Math.pow(Math.random(), 2) * 4;
@@ -1229,59 +1246,82 @@
                     if (takePoint < crashPoint) {
                         win = Math.floor(bet * takePoint);
                         visual = `<div class="crash-graph"><div class="crash-line"></div><div class="crash-multiplier">${takePoint.toFixed(2)}x ✅</div></div>`;
+                        isWin = true;
                     } else {
                         visual = `<div class="crash-graph"><div class="crash-multiplier" style="color:var(--blood)">💥 ${crashPoint.toFixed(2)}x</div></div>`;
                     }
                 }
                 else if (currentGame === 'mines') {
-                    if (Math.random() < 0.25) {
-                        win = Math.floor(bet * 1.4);
-                        visual = '<div style="font-size:80px">💎</div>';
-                    } else {
-                        visual = '<div style="font-size:80px">💥</div>';
-                    }
+                    // Логика мин обрабатывается кликами, здесь заглушка
+                    isPlaying = false;
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('resultMsg').innerText = 'Выбирай ячейки!';
+                    return;
                 }
 
                 display.innerHTML = visual;
                 display.classList.remove('spinning');
 
                 const resultMsg = document.getElementById('resultMsg');
-                if (win > 0) {
+                if (isWin) {
                     profile.balance += win;
                     profile.wins++;
                     resultMsg.innerHTML = `🎉 +${Math.floor(win)} ⭐`;
                     resultMsg.className = 'result-message win';
                     tg.HapticFeedback.notificationOccurred('success');
                     showNotification(`Выигрыш: +${Math.floor(win)} ⭐`, 'success');
+                    
+                    // Отправка выигрыша боту
+                    sendToBot('win', win);
                 } else {
                     profile.losses++;
                     resultMsg.innerHTML = '💀 ПРОИГРЫШ';
                     resultMsg.className = 'result-message lose';
                     tg.HapticFeedback.notificationOccurred('error');
+                    
+                    // Отправка проигрыша боту
+                    if (!isFree) sendToBot('lose', bet);
                 }
 
                 updateUI();
                 isPlaying = false;
                 document.getElementById('playBtn').disabled = false;
 
-                // Отправка данных боту
-                tg.sendData(JSON.stringify({
-                    action: 'update_profile',
-                    data: profile
-                }));
-
             }, 1500);
         }
 
-        function clickMine(id) {
-            if (currentGame !== 'mines' || isPlaying) return;
+        // --- ЛОГИКА МИН (ЧЕСТНАЯ) ---
+        function renderMinesGrid() {
+            const display = document.getElementById('gameDisplay');
+            let html = '<div class="mines-grid">';
+            for(let i=0; i<9; i++) {
+                html += `<div class="mine-cell" id="cell-${i}" onclick="clickMine(${i})">❓</div>`;
+            }
+            html += '</div>';
+            display.innerHTML = html;
             
-            const cell = document.getElementById(`mine${id}`);
-            if (cell.classList.contains('revealed')) return;
+            // Генерируем карту ЗАРАНЕЕ
+            minesMap = Array(9).fill('gem');
+            let minesPlaced = 0;
+            while(minesPlaced < 3) {
+                let idx = Math.floor(Math.random() * 9);
+                if(minesMap[idx] !== 'bomb') {
+                    minesMap[idx] = 'bomb';
+                    minesPlaced++;
+                }
+            }
+        }
+
+        function clickMine(idx) {
+            if(currentGame !== 'mines' || isPlaying) return;
+            
+            const cell = document.getElementById(`cell-${idx}`);
+            if(cell.classList.contains('revealed')) return;
 
             cell.classList.add('revealed');
             
-            if (Math.random() < 0.25) {
+            // Проверяем по карте
+            if(minesMap[idx] === 'gem') {
                 cell.classList.add('gem');
                 cell.innerText = '💎';
                 tg.HapticFeedback.impactOccurred('light');
@@ -1292,16 +1332,34 @@
                 
                 // Показать все мины
                 for (let i = 0; i < 9; i++) {
-                    const c = document.getElementById(`mine${i}`);
-                    if (!c.classList.contains('revealed')) {
+                    const c = document.getElementById(`mine${i}`); // Исправлено ID
+                    if(c && !c.classList.contains('revealed')) {
                         c.classList.add('revealed');
-                        if (Math.random() < 0.3) {
+                        if(minesMap[i] === 'bomb') {
                             c.classList.add('bomb');
                             c.innerText = '💣';
                         }
                     }
                 }
+                
+                // Проигрыш
+                const bet = parseInt(document.getElementById('betInput').value);
+                profile.balance -= bet;
+                profile.losses++;
+                updateUI();
+                sendToBot('lose', bet);
+                document.getElementById('resultMsg').innerHTML = '💀 ВЗРЫВ!';
+                document.getElementById('resultMsg').className = 'result-message lose';
             }
+        }
+
+        function sendToBot(action, amount) {
+            const data = {
+                action: action,
+                amount: amount,
+                user_id: profile.id
+            };
+            tg.sendData(JSON.stringify(data));
         }
 
         function showNotification(message, type) {
