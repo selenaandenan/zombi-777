@@ -6,9 +6,18 @@
     <title>Zombi 777 Casino</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* =========================================
+           1. ШРИФТЫ И БАЗОВЫЕ НАСТРОЙКИ
+           ========================================= */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Creepster&display=swap');
         
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none;
+        }
         
         :root {
             --neon-green: #39ff14;
@@ -16,7 +25,8 @@
             --blood: #ff003c;
             --gold: #ffd700;
             --dark: #0a0a0a;
-            --card-bg: rgba(20, 20, 20, 0.9);
+            --card-bg: rgba(20, 20, 20, 0.95);
+            --glass: rgba(255, 255, 255, 0.05);
         }
 
         body {
@@ -28,7 +38,11 @@
             position: relative;
         }
 
-        /* Анимированный фон с частицами */
+        /* =========================================
+           2. ФОНОВЫЕ ЭФФЕКТЫ (ТУМАН, КРОВЬ, ЧАСТИЦЫ)
+           ========================================= */
+        
+        /* Частицы */
         .bg-particles {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -42,24 +56,24 @@
             height: 2px;
             background: var(--neon-green);
             border-radius: 50%;
-            animation: float 15s infinite;
+            animation: floatParticle 15s infinite linear;
             opacity: 0.6;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-100px) translateX(50px); opacity: 0; }
         }
 
         /* Туман */
-        .fog {
+        .fog-layer {
             position: fixed;
             top: 0; left: 0; width: 200%; height: 100%;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><filter id="fog"><feTurbulence baseFrequency="0.015" numOctaves="3" result="noise"/><feColorMatrix in="noise" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.15 0"/></filter><rect width="100%" height="100%" filter="url(%23fog)"/></svg>');
-            opacity: 0.3;
-            animation: fogMove 30s linear infinite;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><filter id="fogFilter"><feTurbulence baseFrequency="0.015" numOctaves="3" result="noise"/><feColorMatrix in="noise" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.15 0"/></filter><rect width="100%" height="100%" filter="url(%23fogFilter)"/></svg>');
+            opacity: 0.25;
+            animation: fogMove 40s linear infinite;
             z-index: 1;
             pointer-events: none;
         }
@@ -72,21 +86,24 @@
         /* Кровавые капли */
         .blood-drip {
             position: fixed;
-            top: -10px;
-            width: 3px;
+            top: -20px;
+            width: 2px;
             background: linear-gradient(to bottom, var(--blood), transparent);
-            animation: drip 8s infinite;
+            animation: dripBlood 6s infinite ease-in;
             z-index: 1;
             pointer-events: none;
         }
 
-        @keyframes drip {
-            0% { height: 0; opacity: 1; }
-            70% { height: 100px; opacity: 1; }
-            100% { height: 150px; opacity: 0; }
+        @keyframes dripBlood {
+            0% { height: 0; opacity: 1; top: -10px; }
+            80% { height: 150px; opacity: 1; }
+            100% { height: 200px; opacity: 0; top: 100vh; }
         }
 
-        .container {
+        /* =========================================
+           3. ОСНОВНОЙ КОНТЕЙНЕР И ЛОГОТИП
+           ========================================= */
+        .main-container {
             max-width: 500px;
             margin: 0 auto;
             padding: 20px;
@@ -94,47 +111,47 @@
             z-index: 10;
         }
 
-        /* Логотип с глитчем */
-        .logo-container {
+        .logo-area {
             text-align: center;
             margin: 20px 0 30px;
             position: relative;
         }
 
-        .logo {
+        .zombi-logo {
             font-family: 'Creepster', cursive;
-            font-size: 48px;
+            font-size: 52px;
             color: var(--neon-green);
             text-shadow: 
                 0 0 10px var(--neon-green),
                 0 0 20px var(--neon-green),
                 0 0 40px var(--neon-green),
-                3px 3px 0 var(--blood);
-            animation: glitch 2s infinite;
+                4px 4px 0 var(--blood);
+            animation: logoGlitch 3s infinite;
             position: relative;
             display: inline-block;
         }
 
-        .logo::before, .logo::after {
+        .zombi-logo::before, .zombi-logo::after {
             content: 'ZOMBI 777';
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
+            opacity: 0.8;
         }
 
-        .logo::before {
+        .zombi-logo::before {
             color: var(--blood);
-            animation: glitch-1 2s infinite;
+            animation: glitchLayer1 2.5s infinite;
             clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
         }
 
-        .logo::after {
+        .zombi-logo::after {
             color: var(--neon-purple);
-            animation: glitch-2 2s infinite;
+            animation: glitchLayer2 2.5s infinite;
             clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
         }
 
-        @keyframes glitch {
+        @keyframes logoGlitch {
             0%, 100% { transform: translate(0); }
             20% { transform: translate(-2px, 2px); }
             40% { transform: translate(-2px, -2px); }
@@ -142,44 +159,47 @@
             80% { transform: translate(2px, -2px); }
         }
 
-        @keyframes glitch-1 {
+        @keyframes glitchLayer1 {
             0%, 100% { transform: translate(0); }
             20% { transform: translate(3px, -3px); }
             40% { transform: translate(-3px, 3px); }
         }
 
-        @keyframes glitch-2 {
+        @keyframes glitchLayer2 {
             0%, 100% { transform: translate(0); }
             20% { transform: translate(-3px, 3px); }
             40% { transform: translate(3px, -3px); }
         }
 
-        .subtitle {
+        .subtitle-text {
             font-size: 12px;
             color: var(--blood);
-            letter-spacing: 4px;
+            letter-spacing: 6px;
             margin-top: 10px;
             text-transform: uppercase;
-            animation: pulse 2s infinite;
+            animation: subtitlePulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        @keyframes subtitlePulse {
+            0%, 100% { opacity: 1; text-shadow: 0 0 5px var(--blood); }
+            50% { opacity: 0.5; text-shadow: none; }
         }
 
-        /* Баланс карточка */
+        /* =========================================
+           4. КАРТОЧКА БАЛАНСА
+           ========================================= */
         .balance-card {
             background: linear-gradient(135deg, rgba(57,255,20,0.1), rgba(188,19,254,0.1));
             border: 2px solid var(--neon-green);
             border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
             position: relative;
             overflow: hidden;
             box-shadow: 
                 0 0 20px rgba(57,255,20,0.3),
                 inset 0 0 20px rgba(57,255,20,0.1);
+            backdrop-filter: blur(5px);
         }
 
         .balance-card::before {
@@ -188,35 +208,98 @@
             top: -50%; left: -50%;
             width: 200%; height: 200%;
             background: linear-gradient(45deg, transparent, rgba(57,255,20,0.1), transparent);
-            animation: shine 3s infinite;
+            animation: balanceShine 3s infinite;
         }
 
-        @keyframes shine {
+        @keyframes balanceShine {
             0% { transform: translateX(-100%) rotate(45deg); }
             100% { transform: translateX(100%) rotate(45deg); }
         }
 
         .balance-label {
-            font-size: 11px;
+            font-size: 12px;
             color: #888;
             text-transform: uppercase;
             letter-spacing: 2px;
+            margin-bottom: 5px;
         }
 
-        .balance-amount {
-            font-size: 36px;
+        .balance-value {
+            font-size: 42px;
             font-weight: 900;
             color: var(--neon-green);
             text-shadow: 0 0 20px var(--neon-green);
-            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .balance-amount span {
-            font-size: 24px;
+        .star-icon {
+            font-size: 32px;
             color: var(--gold);
+            animation: starSpin 4s linear infinite;
         }
 
-        /* Навигация */
+        @keyframes starSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* =========================================
+           5. ДЖЕКПОТ БАННЕР
+           ========================================= */
+        .jackpot-banner {
+            background: linear-gradient(135deg, rgba(255,0,60,0.2), rgba(188,19,254,0.2));
+            border: 2px solid var(--blood);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .jackpot-banner:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255,0,60,0.5);
+        }
+
+        .jackpot-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,0,60,0.3), transparent);
+            animation: jackpotShine 2s infinite;
+        }
+
+        @keyframes jackpotShine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .jackpot-label {
+            font-size: 12px;
+            color: var(--blood);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .jackpot-amount {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 20px var(--gold);
+        }
+
+        /* =========================================
+           6. НАВИГАЦИЯ И СЕТКА ИГР
+           ========================================= */
         .nav-tabs {
             display: flex;
             gap: 10px;
@@ -231,11 +314,12 @@
             border-radius: 12px;
             color: #888;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.3s;
             text-transform: uppercase;
             letter-spacing: 1px;
+            text-align: center;
         }
 
         .nav-tab.active {
@@ -246,22 +330,20 @@
             transform: translateY(-2px);
         }
 
-        /* Секции */
-        .section {
+        .section-content {
             display: none;
-            animation: slideIn 0.5s;
+            animation: slideInSection 0.5s;
         }
 
-        .section.active {
+        .section-content.active {
             display: block;
         }
 
-        @keyframes slideIn {
+        @keyframes slideInSection {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Сетка игр */
         .games-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -342,7 +424,7 @@
             box-shadow: 0 10px 30px rgba(255,0,60,0.4);
         }
 
-        .badge {
+        .badge-hot {
             position: absolute;
             top: 10px; right: 10px;
             background: var(--blood);
@@ -359,10 +441,12 @@
             50% { box-shadow: 0 0 15px var(--blood); }
         }
 
-        /* Профиль */
+        /* =========================================
+           7. ПРОФИЛЬ И СТАТИСТИКА
+           ========================================= */
         .profile-header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
 
         .profile-avatar {
@@ -401,7 +485,6 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
-            margin-bottom: 20px;
         }
 
         .stat-card {
@@ -437,7 +520,9 @@
             margin-top: 5px;
         }
 
-        /* Модальное окно игры */
+        /* =========================================
+           8. МОДАЛЬНОЕ ОКНО ИГРЫ
+           ========================================= */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -451,10 +536,10 @@
 
         .modal-overlay.active {
             display: flex;
-            animation: fadeIn 0.3s;
+            animation: fadeInModal 0.3s;
         }
 
-        @keyframes fadeIn {
+        @keyframes fadeInModal {
             from { opacity: 0; }
             to { opacity: 1; }
         }
@@ -471,10 +556,10 @@
             box-shadow: 
                 0 0 50px rgba(57,255,20,0.3),
                 inset 0 0 50px rgba(57,255,20,0.1);
-            animation: modalSlide 0.4s;
+            animation: modalSlideUp 0.4s;
         }
 
-        @keyframes modalSlide {
+        @keyframes modalSlideUp {
             from { transform: scale(0.8) translateY(50px); opacity: 0; }
             to { transform: scale(1) translateY(0); opacity: 1; }
         }
@@ -503,8 +588,8 @@
             letter-spacing: 2px;
         }
 
-        .game-display {
-            height: 150px;
+        .game-display-area {
+            height: 180px;
             background: #000;
             border: 2px solid #333;
             border-radius: 16px;
@@ -516,16 +601,6 @@
             position: relative;
             overflow: hidden;
             box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
-        }
-
-        .game-display.spinning {
-            animation: shake 0.5s;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
         }
 
         .bet-controls {
@@ -557,7 +632,7 @@
             outline: none;
         }
 
-        .play-button, .cashout-button {
+        .play-btn, .cashout-btn {
             background: linear-gradient(135deg, var(--neon-green), var(--neon-purple));
             border: none;
             border-radius: 12px;
@@ -573,25 +648,26 @@
             font-family: 'Orbitron', sans-serif;
         }
 
-        .cashout-button {
+        .cashout-btn {
             background: linear-gradient(135deg, var(--gold), #b8860b);
             box-shadow: 0 0 25px rgba(255,215,0,0.5);
             display: none;
         }
 
-        .play-button:hover, .cashout-button:hover {
+        .play-btn:hover, .cashout-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 0 40px rgba(57,255,20,0.8);
         }
 
-        .play-button:active, .cashout-button:active {
+        .play-btn:active, .cashout-btn:active {
             transform: scale(0.95);
         }
 
-        .play-button:disabled, .cashout-button:disabled {
+        .play-btn:disabled, .cashout-btn:disabled {
             background: #333;
             box-shadow: none;
             cursor: not-allowed;
+            color: #666;
         }
 
         .result-message {
@@ -626,8 +702,12 @@
             75% { transform: translateX(10px); }
         }
 
-        /* Слоты анимация CS:GO */
-        .slots-container {
+        /* =========================================
+           9. АНИМАЦИИ ИГР (CS:GO СЛОТЫ, МОНЕТКА, РУЛЕТКА)
+           ========================================= */
+        
+        /* Слоты CS:GO */
+        .slots-wrapper {
             display: flex;
             gap: 10px;
             justify-content: center;
@@ -661,10 +741,16 @@
             font-size: 40px;
         }
 
-        /* Монетка */
-        .coin {
+        /* Монетка 3D */
+        .coin-container {
+            perspective: 1000px;
             width: 100px;
             height: 100px;
+        }
+
+        .coin-3d {
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--gold), #b8860b);
             display: flex;
@@ -672,12 +758,17 @@
             justify-content: center;
             font-size: 50px;
             box-shadow: 0 0 30px var(--gold);
-            animation: coinFlip 1s;
+            position: relative;
+            transform-style: preserve-3d;
         }
 
-        @keyframes coinFlip {
+        .coin-3d.flipping-realistic {
+            animation: flipRealistic 2.5s cubic-bezier(0.15, 0.85, 0.35, 1.0) forwards;
+        }
+
+        @keyframes flipRealistic {
             0% { transform: rotateY(0); }
-            100% { transform: rotateY(720deg); }
+            100% { transform: rotateY(1800deg); }
         }
 
         /* Рулетка */
@@ -685,88 +776,53 @@
             width: 120px;
             height: 120px;
             border-radius: 50%;
+            border: 4px solid var(--gold);
             background: conic-gradient(
-                var(--blood) 0deg 10deg,
-                #000 10deg 20deg,
-                var(--blood) 20deg 30deg,
-                #000 30deg 40deg,
-                var(--blood) 40deg 50deg,
-                #000 50deg 60deg,
-                var(--blood) 60deg 70deg,
-                #000 70deg 80deg,
-                var(--blood) 80deg 90deg,
-                #000 90deg 100deg,
-                var(--blood) 100deg 110deg,
-                #000 110deg 120deg,
-                var(--blood) 120deg 130deg,
-                #000 130deg 140deg,
-                var(--blood) 140deg 150deg,
-                #000 150deg 160deg,
-                var(--blood) 160deg 170deg,
-                #000 170deg 180deg,
-                var(--neon-green) 180deg 190deg,
-                #000 190deg 200deg,
-                var(--blood) 200deg 210deg,
-                #000 210deg 220deg,
-                var(--blood) 220deg 230deg,
-                #000 230deg 240deg,
-                var(--blood) 240deg 250deg,
-                #000 250deg 260deg,
-                var(--blood) 260deg 270deg,
-                #000 270deg 280deg,
-                var(--blood) 280deg 290deg,
-                #000 290deg 300deg,
-                var(--blood) 300deg 310deg,
-                #000 310deg 320deg,
-                var(--blood) 320deg 330deg,
-                #000 330deg 340deg,
-                var(--blood) 340deg 350deg,
-                #000 350deg 360deg
+                var(--blood) 0deg 10deg, #000 10deg 20deg,
+                var(--blood) 20deg 30deg, #000 30deg 40deg,
+                var(--blood) 40deg 50deg, #000 50deg 60deg,
+                var(--blood) 60deg 70deg, #000 70deg 80deg,
+                var(--blood) 80deg 90deg, #000 90deg 100deg,
+                var(--blood) 100deg 110deg, #000 110deg 120deg,
+                var(--blood) 120deg 130deg, #000 130deg 140deg,
+                var(--blood) 140deg 150deg, #000 150deg 160deg,
+                var(--blood) 160deg 170deg, #000 170deg 180deg,
+                var(--neon-green) 180deg 190deg, #000 190deg 200deg,
+                var(--blood) 200deg 210deg, #000 210deg 220deg,
+                var(--blood) 220deg 230deg, #000 230deg 240deg,
+                var(--blood) 240deg 250deg, #000 250deg 260deg,
+                var(--blood) 260deg 270deg, #000 270deg 280deg,
+                var(--blood) 280deg 290deg, #000 290deg 300deg,
+                var(--blood) 300deg 310deg, #000 310deg 320deg,
+                var(--blood) 320deg 330deg, #000 330deg 340deg,
+                var(--blood) 340deg 350deg, #000 350deg 360deg
             );
-            animation: rouletteSpin 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
             box-shadow: 0 0 30px rgba(255,0,60,0.5);
-        }
-
-        @keyframes rouletteSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(1440deg); }
-        }
-
-        /* Краш график */
-        .crash-graph {
-            width: 100%;
-            height: 100%;
             position: relative;
         }
 
-        .crash-line {
+        .roulette-wheel::after {
+            content: '▼';
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 3px;
-            background: var(--neon-green);
-            box-shadow: 0 0 10px var(--neon-green);
-            animation: crashGrow 2s linear;
-        }
-
-        @keyframes crashGrow {
-            0% { width: 0; }
-            100% { width: 100%; }
-        }
-
-        .crash-multiplier {
-            position: absolute;
-            top: 50%;
+            top: -15px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            font-weight: 900;
-            color: var(--neon-green);
-            text-shadow: 0 0 20px var(--neon-green);
+            transform: translateX(-50%);
+            color: var(--gold);
+            font-size: 24px;
+            z-index: 10;
         }
 
-        /* Мины сетка */
+        .roulette-wheel.spinning {
+            animation: rouletteSpinReal 3s cubic-bezier(0.1, 0.7, 0.1, 1) forwards;
+        }
+
+        @keyframes rouletteSpinReal {
+            0% { transform: rotate(0deg); filter: blur(0px); }
+            20% { filter: blur(2px); }
+            100% { transform: rotate(1620deg); filter: blur(0px); }
+        }
+
+        /* Мины */
         .mines-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -824,56 +880,10 @@
             100% { transform: scale(1); }
         }
 
-        /* Джекпот баннер */
-        .jackpot-banner {
-            background: linear-gradient(135deg, rgba(255,0,60,0.2), rgba(188,19,254,0.2));
-            border: 2px solid var(--blood);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .jackpot-banner:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 30px rgba(255,0,60,0.5);
-        }
-
-        .jackpot-banner::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,0,60,0.3), transparent);
-            animation: jackpotShine 2s infinite;
-        }
-
-        @keyframes jackpotShine {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
-        }
-
-        .jackpot-label {
-            font-size: 11px;
-            color: var(--blood);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-
-        .jackpot-amount {
-            font-size: 32px;
-            font-weight: 900;
-            color: var(--gold);
-            text-shadow: 0 0 20px var(--gold);
-        }
-
-        /* Уведомления */
-        .notification {
+        /* =========================================
+           10. УВЕДОМЛЕНИЯ И САЛЮТ
+           ========================================= */
+        .notification-popup {
             position: fixed;
             top: 20px;
             left: 50%;
@@ -892,10 +902,25 @@
             to { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
 
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
         /* Адаптивность */
         @media (max-width: 480px) {
-            .logo { font-size: 36px; }
-            .balance-amount { font-size: 28px; }
+            .zombi-logo { font-size: 36px; }
+            .balance-value { font-size: 28px; }
             .game-icon { font-size: 36px; }
             .games-grid { gap: 10px; }
         }
@@ -904,19 +929,22 @@
 <body>
     <!-- Фоновые эффекты -->
     <div class="bg-particles" id="particles"></div>
-    <div class="fog"></div>
+    <div class="fog-layer"></div>
 
-    <div class="container">
+    <div class="main-container">
         <!-- Логотип -->
-        <div class="logo-container">
-            <div class="logo">ZOMBI 777</div>
-            <div class="subtitle">Casino of the Dead</div>
+        <div class="logo-area">
+            <div class="zombi-logo">ZOMBI 777</div>
+            <div class="subtitle-text">Casino of the Dead</div>
         </div>
 
         <!-- Баланс -->
         <div class="balance-card">
             <div class="balance-label">Ваш баланс</div>
-            <div class="balance-amount"><span id="uiBalance">0</span> <span>⭐</span></div>
+            <div class="balance-value">
+                <span id="uiBalance">0</span>
+                <span class="star-icon">⭐</span>
+            </div>
         </div>
 
         <!-- Джекпот -->
@@ -932,12 +960,12 @@
         </div>
 
         <!-- Секция игр -->
-        <div id="sec-games" class="section active">
+        <div id="sec-games" class="section-content active">
             <div class="games-grid">
                 <div class="game-card" onclick="openGame('slots')">
                     <span class="game-icon">🎰</span>
                     <div class="game-name">Слоты</div>
-                    <div class="game-desc">x10 максимум</div>
+                    <div class="game-desc">Только 3 в ряд</div>
                 </div>
                 <div class="game-card" onclick="openGame('dice')">
                     <span class="game-icon">🎲</span>
@@ -950,7 +978,7 @@
                     <div class="game-desc">Орёл или решка</div>
                 </div>
                 <div class="game-card featured" onclick="openGame('safe')">
-                    <span class="badge">HOT</span>
+                    <span class="badge-hot">HOT</span>
                     <span class="game-icon">💣</span>
                     <div class="game-name">Сейф</div>
                     <div class="game-desc">Сорви джекпот!</div>
@@ -960,21 +988,16 @@
                     <div class="game-name">Рулетка</div>
                     <div class="game-desc">Красное/Чёрное</div>
                 </div>
-                <div class="game-card" onclick="openGame('crash')">
-                    <span class="game-icon">🚀</span>
-                    <div class="game-name">Краш</div>
-                    <div class="game-desc">Успей забрать</div>
-                </div>
                 <div class="game-card" onclick="openGame('mines')">
                     <span class="game-icon">💎</span>
                     <div class="game-name">Мины</div>
-                    <div class="game-desc">Найди алмазы</div>
+                    <div class="game-desc">4 мины, кликай сам</div>
                 </div>
             </div>
         </div>
 
         <!-- Секция профиля -->
-        <div id="sec-profile" class="section">
+        <div id="sec-profile" class="section-content">
             <div class="profile-header">
                 <div class="profile-avatar">🧟</div>
                 <div class="profile-name" id="profileName">Игрок</div>
@@ -1015,11 +1038,11 @@
         <div class="modal-content">
             <div class="modal-close" onclick="closeModal()">✖</div>
             <div class="game-title" id="gameTitle">ИГРА</div>
-            <div class="game-display" id="gameDisplay">🎮</div>
+            <div class="game-display-area" id="gameDisplay">🎮</div>
             <div class="bet-controls">
                 <input type="number" class="bet-input" id="betInput" value="10" min="1">
-                <button class="play-button" id="playBtn" onclick="startGameAction()">ИГРАТЬ</button>
-                <button class="cashout-button" id="cashoutBtn" onclick="cashoutMines()">ЗАБРАТЬ</button>
+                <button class="play-btn" id="playBtn" onclick="startGameAction()">ИГРАТЬ</button>
+                <button class="cashout-btn" id="cashoutBtn" onclick="cashoutMines()">ЗАБРАТЬ</button>
             </div>
             <div class="result-message" id="resultMsg"></div>
         </div>
@@ -1030,7 +1053,7 @@
         tg.expand();
         tg.ready();
 
-        // Создание частиц фона
+        // --- ИНИЦИАЛИЗАЦИЯ ЭФФЕКТОВ ---
         function createParticles() {
             const container = document.getElementById('particles');
             for (let i = 0; i < 30; i++) {
@@ -1044,7 +1067,6 @@
         }
         createParticles();
 
-        // Создание кровавых капель
         function createBloodDrips() {
             for (let i = 0; i < 5; i++) {
                 const drip = document.createElement('div');
@@ -1056,7 +1078,7 @@
         }
         createBloodDrips();
 
-        // Данные профиля
+        // --- ДАННЫЕ И СОСТОЯНИЕ ---
         let profile = {
             balance: 0,
             deposits: 0,
@@ -1107,7 +1129,7 @@
         }
 
         function showSection(section) {
-            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
             document.getElementById(`sec-${section}`).classList.add('active');
             event.target.classList.add('active');
@@ -1133,19 +1155,18 @@
             minesActive = false;
 
             const games = {
-                'slots': { name: '🎰 СЛОТЫ', bet: 20, display: '🍒 🍋 🍇' },
-                'dice': { name: '🎲 КОСТИ', bet: 10, display: '🎲' },
-                'coin': { name: '🪙 МОНЕТКА', bet: 15, display: '🪙' },
-                'safe': { name: '💣 СЕЙФ', bet: 50, display: '🔒' },
-                'roulette': { name: '🎡 РУЛЕТКА', bet: 25, display: '🎡' },
-                'crash': { name: '🚀 КРАШ', bet: 20, display: '1.00x' },
-                'mines': { name: '💎 МИНЫ', bet: 30, display: '💎' }
+                'slots': { name: '🎰 СЛОТЫ', bet: 20 },
+                'dice': { name: '🎲 КОСТИ', bet: 10 },
+                'coin': { name: '🪙 МОНЕТКА', bet: 15 },
+                'safe': { name: '💣 СЕЙФ', bet: 50 },
+                'roulette': { name: '🎡 РУЛЕТКА', bet: 25 },
+                'mines': { name: '💎 МИНЫ', bet: 30 }
             };
 
             title.innerText = games[gameType].name;
             betInput.value = games[gameType].bet;
-            display.innerHTML = games[gameType].display;
             betInput.disabled = false;
+            display.innerHTML = '🎲';
 
             // Специфичная логика для костей (бесплатная попытка 1 раз в день)
             if (gameType === 'dice') {
@@ -1163,8 +1184,6 @@
             // Рендер специфичных элементов
             if (gameType === 'mines') {
                 renderMinesGrid();
-            } else if (gameType === 'crash') {
-                display.innerHTML = '<div class="crash-graph"><div class="crash-multiplier">1.00x</div></div>';
             }
         }
 
@@ -1211,75 +1230,77 @@
                 let display = document.getElementById('gameDisplay');
                 let isWin = false;
 
-                // ЖЁСТКАЯ МАТЕМАТИКА (казино в плюсе)
+                // --- ЖЁСТКАЯ ПОДКРУТКА (КАЗИНО В ПЛЮСЕ ~90%) ---
+                const rand = Math.random() * 100;
+
                 if (currentGame === 'slots') {
-                    // CS:GO-стиль: генерируем ленту с финальными символами
                     const symbols = ['🍒', '🍋', '🍇', '💀', '7️⃣'];
-                    const finalSymbols = [
-                        symbols[Math.floor(Math.random() * symbols.length)],
-                        symbols[Math.floor(Math.random() * symbols.length)],
-                        symbols[Math.floor(Math.random() * symbols.length)]
-                    ];
+                    let finalSymbols;
+                    
+                    if (rand < 4) { // 4% шанс на победу (3 одинаковых, но НЕ черепа)
+                        const sym = ['🍒', '🍋', '🍇', '7️⃣'][Math.floor(Math.random() * 4)];
+                        finalSymbols = [sym, sym, sym];
+                        isWin = true;
+                        win = bet * 4; // Сниженный множитель
+                    } else if (rand < 20) { // 16% шанс на 3 черепа (гарантированный проигрыш)
+                        finalSymbols = ['💀', '💀', '💀'];
+                        isWin = false;
+                    } else { // 80% шанс на рандомный мусор (без совпадений)
+                        finalSymbols = [
+                            symbols[Math.floor(Math.random() * symbols.length)],
+                            symbols[Math.floor(Math.random() * symbols.length)],
+                            symbols[Math.floor(Math.random() * symbols.length)]
+                        ];
+                        // Защита от случайного выигрыша
+                        if (finalSymbols[0] === finalSymbols[1] && finalSymbols[1] === finalSymbols[2]) {
+                            finalSymbols[2] = symbols[(symbols.indexOf(finalSymbols[2]) + 1) % symbols.length];
+                        }
+                        isWin = false;
+                    }
                     
                     let stripHTML = '<div class="slot-strip">';
-                    for(let i=0; i<20; i++) {
-                        stripHTML += `<div class="slot-symbol">${symbols[Math.floor(Math.random() * symbols.length)]}</div>`;
-                    }
+                    for(let i=0; i<20; i++) stripHTML += `<div class="slot-symbol">${symbols[Math.floor(Math.random() * symbols.length)]}</div>`;
                     finalSymbols.forEach(s => { stripHTML += `<div class="slot-symbol">${s}</div>`; });
                     stripHTML += '</div>';
                     
-                    visual = `<div class="slots-container">
+                    visual = `<div class="slots-wrapper">
                         <div class="slot-reel">${stripHTML.replace('class="slot-strip"', 'class="slot-strip" id="reel1"')}</div>
                         <div class="slot-reel">${stripHTML.replace('class="slot-strip"', 'class="slot-strip" id="reel2"')}</div>
                         <div class="slot-reel">${stripHTML.replace('class="slot-strip"', 'class="slot-strip" id="reel3"')}</div>
                     </div>`;
-                    
                     display.innerHTML = visual;
-                    
-                    // Запускаем CS:GO анимацию (плавное замедление)
                     setTimeout(() => {
                         document.getElementById('reel1').style.transform = 'translateY(-2000px)';
                         document.getElementById('reel2').style.transform = 'translateY(-2000px)';
                         document.getElementById('reel3').style.transform = 'translateY(-2000px)';
                     }, 50);
-                    
-                    // Проверка выигрыша по финальным символам
-                    if (finalSymbols[0] === finalSymbols[1] && finalSymbols[1] === finalSymbols[2]) {
-                        win = bet * 8;
-                        isWin = true;
-                    } else if (finalSymbols[0] === finalSymbols[1] || finalSymbols[1] === finalSymbols[2] || finalSymbols[0] === finalSymbols[2]) {
-                        win = Math.floor(bet * 1.5);
-                        isWin = true;
-                    }
                 }
                 else if (currentGame === 'dice') {
-                    const roll = Math.floor(Math.random() * 6) + 1;
+                    let roll;
+                    if (rand < 10) roll = 6; // 10% шанс на 6 (вместо 16.6%)
+                    else roll = Math.floor(Math.random() * 5) + 1;
+                    
                     visual = `<div style="font-size:80px">🎲</div><div style="font-size:30px;margin-top:10px">${roll}</div>`;
-                    // ШАНС ТОЛЬКО НА 6 (низкий процент)
                     if (roll === 6) {
-                        win = isFree ? 20 : Math.floor(bet * 1.6);
+                        win = isFree ? 10 : Math.floor(bet * 1.2); // Очень маленький выигрыш
                         isWin = true;
                         if (isFree) localStorage.setItem('lastDiceBonus', Date.now());
                     }
                 }
                 else if (currentGame === 'coin') {
-                    const side = Math.random() > 0.5 ? '🦅' : '🪙';
-                    visual = `<div class="coin">${side}</div>`;
-                    if (Math.random() < 0.42) {
-                        win = Math.floor(bet * 1.7);
+                    const isWinCoin = rand < 30; // 30% шанс победы
+                    const side = isWinCoin ? '🦅' : '🪙';
+                    visual = `<div class="coin-container"><div class="coin-3d flipping-realistic">${side}</div></div>`;
+                    if (isWinCoin) {
+                        win = Math.floor(bet * 1.3);
                         isWin = true;
                     }
                 }
                 else if (currentGame === 'safe') {
-                    const luck = Math.random();
-                    if (luck < 0.02) {
-                        win = 5000;
-                        visual = '<div style="font-size:60px">💰💰💰</div>';
-                        isWin = true;
-                    } else if (luck < 0.27) {
-                        win = Math.floor(bet * 1.3);
-                        visual = '<div style="font-size:60px">💵</div>';
-                        isWin = true;
+                    if (rand < 0.5) { // 0.5% джекпот
+                        win = 5000; visual = '<div style="font-size:60px">💰💰💰</div>'; isWin = true;
+                    } else if (rand < 10) { // 9.5% маленький выигрыш
+                        win = Math.floor(bet * 1.1); visual = '<div style="font-size:60px">💵</div>'; isWin = true;
                     } else {
                         visual = '<div style="font-size:60px">💣</div>';
                     }
@@ -1287,25 +1308,15 @@
                 else if (currentGame === 'roulette') {
                     const num = Math.floor(Math.random() * 37);
                     const isRed = num !== 0 && num % 2 !== 0;
-                    visual = `<div class="roulette-wheel"></div><div style="position:absolute;font-size:40px;font-weight:900">${num}</div>`;
-                    if (isRed && Math.random() < 0.83) {
-                        win = Math.floor(bet * 1.8);
+                    visual = `<div class="roulette-wheel spinning"></div><div style="position:absolute;font-size:40px;font-weight:900;margin-top:120px">${num}</div>`;
+                    // Выигрыш только если красное И рандом < 25 (25% шанс от красного)
+                    if (isRed && Math.random() < 0.25) {
+                        win = Math.floor(bet * 1.5);
                         isWin = true;
-                    }
-                }
-                else if (currentGame === 'crash') {
-                    const crashPoint = 1 + Math.pow(Math.random(), 2) * 4;
-                    const takePoint = 1.1 + Math.random() * 0.8;
-                    if (takePoint < crashPoint) {
-                        win = Math.floor(bet * takePoint);
-                        visual = `<div class="crash-graph"><div class="crash-line"></div><div class="crash-multiplier">${takePoint.toFixed(2)}x ✅</div></div>`;
-                        isWin = true;
-                    } else {
-                        visual = `<div class="crash-graph"><div class="crash-multiplier" style="color:var(--blood)">💥 ${crashPoint.toFixed(2)}x</div></div>`;
                     }
                 }
 
-                display.innerHTML = visual;
+                if (currentGame !== 'slots') display.innerHTML = visual;
                 display.classList.remove('spinning');
 
                 const resultMsg = document.getElementById('resultMsg');
@@ -1316,16 +1327,13 @@
                     resultMsg.className = 'result-message win';
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                     showNotification(`Выигрыш: +${Math.floor(win)} ⭐`, 'success');
-                    
-                    // Отправка выигрыша боту
+                    triggerConfetti(); // САЛЮТ!
                     sendToBot('win', win);
                 } else {
                     profile.losses++;
-                    resultMsg.innerHTML = '💀 ПРОИГРЫШ';
+                    resultMsg.innerHTML = currentGame === 'slots' && JSON.stringify(display.innerHTML).includes('💀') ? '💀 ТРОЙНОЙ ЧЕРЕП! ПРОИГРЫШ' : '💀 ПРОИГРЫШ';
                     resultMsg.className = 'result-message lose';
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                    
-                    // Отправка проигрыша боту
                     if (!isFree) sendToBot('lose', bet);
                 }
 
@@ -1333,73 +1341,54 @@
                 isPlaying = false;
                 document.getElementById('playBtn').disabled = false;
 
-            }, 1500);
+            }, currentGame === 'coin' ? 2500 : 1500);
         }
 
-        // --- ЛОГИКА МИН (ЧЕСТНАЯ, РУЧНАЯ) ---
+        // --- ЛОГИКА МИН (РУЧНАЯ, 4 МИНЫ) ---
         function renderMinesGrid() {
             const display = document.getElementById('gameDisplay');
             let html = '<div class="mines-grid">';
-            for (let i = 0; i < 9; i++) {
-                html += `<div class="mine-cell" id="mine${i}" onclick="clickMine(${i})">❓</div>`;
-            }
+            for (let i = 0; i < 9; i++) html += `<div class="mine-cell" id="mine${i}" onclick="clickMine(${i})">❓</div>`;
             html += '</div>';
             display.innerHTML = html;
             
-            // Генерируем карту мин ЗАРАНЕЕ (честно, 3 мины из 9)
             minesMap = Array(9).fill('gem');
             let minesPlaced = 0;
-            while (minesPlaced < 3) {
+            while (minesPlaced < 4) { // 4 мины вместо 3 (сложнее)
                 let idx = Math.floor(Math.random() * 9);
-                if (minesMap[idx] !== 'bomb') {
-                    minesMap[idx] = 'bomb';
-                    minesPlaced++;
-                }
+                if (minesMap[idx] !== 'bomb') { minesMap[idx] = 'bomb'; minesPlaced++; }
             }
         }
 
         function clickMine(id) {
-            if (currentGame !== 'mines' || minesActive === false && gemsFound === 0) {
-                // Проверка: игра должна быть активна (ставка сделана)
-                if (currentGame !== 'mines') return;
-            }
-            
+            if (currentGame !== 'mines') return;
             const cell = document.getElementById(`mine${id}`);
             if (cell.classList.contains('revealed')) return;
 
             cell.classList.add('revealed');
             
-            // Проверяем по заранее созданной карте (честно!)
             if (minesMap[id] === 'gem') {
                 cell.classList.add('gem');
                 cell.innerText = '💎';
                 gemsFound++;
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                
-                // Показываем кнопку "ЗАБРАТЬ"
                 document.getElementById('cashoutBtn').style.display = 'inline-block';
-                document.getElementById('resultMsg').innerHTML = `<span style="color:var(--neon-green)">Найдено алмазов: ${gemsFound}</span>`;
+                document.getElementById('resultMsg').innerHTML = `<span style="color:var(--neon-green)">Алмазов: ${gemsFound}</span>`;
             } else {
                 cell.classList.add('bomb');
                 cell.innerText = '💣';
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 
-                // Показать все мины
                 for (let i = 0; i < 9; i++) {
                     const c = document.getElementById(`mine${i}`);
                     if (!c.classList.contains('revealed')) {
                         c.classList.add('revealed');
-                        if (minesMap[i] === 'bomb') {
-                            c.classList.add('bomb');
-                            c.innerText = '💣';
-                        } else {
-                            c.innerText = '💎';
-                            c.style.opacity = '0.3';
-                        }
+                        c.classList.add(minesMap[i] === 'bomb' ? 'bomb' : 'gem');
+                        c.innerText = minesMap[i] === 'bomb' ? '💣' : '💎';
+                        if (minesMap[i] === 'gem') c.style.opacity = '0.3';
                     }
                 }
                 
-                // Проигрыш
                 const bet = parseInt(document.getElementById('betInput').value);
                 profile.losses++;
                 document.getElementById('resultMsg').innerHTML = '💀 ВЗРЫВ!';
@@ -1412,23 +1401,17 @@
 
         function cashoutMines() {
             if (gemsFound === 0) return;
-            
             const bet = parseInt(document.getElementById('betInput').value);
-            // Формула выигрыша: ставка * (1 + 0.5 за каждый алмаз)
-            let winAmount = Math.floor(bet * (1 + (gemsFound * 0.5)));
+            // Сниженный множитель: 1 + (gems * 0.3) вместо 0.5
+            let winAmount = Math.floor(bet * (1 + (gemsFound * 0.3)));
             
-            // Показать все мины
             for (let i = 0; i < 9; i++) {
                 const c = document.getElementById(`mine${i}`);
                 if (!c.classList.contains('revealed')) {
                     c.classList.add('revealed');
-                    if (minesMap[i] === 'bomb') {
-                        c.classList.add('bomb');
-                        c.innerText = '💣';
-                    } else {
-                        c.innerText = '💎';
-                        c.style.opacity = '0.3';
-                    }
+                    c.classList.add(minesMap[i] === 'bomb' ? 'bomb' : 'gem');
+                    c.innerText = minesMap[i] === 'bomb' ? '💣' : '💎';
+                    if (minesMap[i] === 'gem') c.style.opacity = '0.3';
                 }
             }
             
@@ -1439,35 +1422,44 @@
             document.getElementById('cashoutBtn').style.display = 'none';
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             showNotification(`Забрал: +${winAmount} ⭐`, 'success');
-            
+            triggerConfetti();
             sendToBot('win', winAmount);
             updateUI();
         }
 
         // --- СВЯЗЬ С БОТОМ ---
         function sendToBot(action, amount) {
-            const data = {
-                action: action,
-                amount: amount,
-                user_id: profile.id
-            };
-            tg.sendData(JSON.stringify(data));
+            tg.sendData(JSON.stringify({ action: action, amount: amount, user_id: profile.id }));
         }
 
         function showNotification(message, type) {
             const notif = document.createElement('div');
-            notif.className = 'notification';
+            notif.className = 'notification-popup';
             notif.innerText = message;
             notif.style.borderColor = type === 'success' ? 'var(--neon-green)' : 'var(--blood)';
             document.body.appendChild(notif);
-            
             setTimeout(() => {
                 notif.style.animation = 'notifSlide 0.5s reverse';
                 setTimeout(() => notif.remove(), 500);
             }, 3000);
         }
 
-        // Закрытие модалки по клику вне её
+        // --- ЭФФЕКТ САЛЮТА / КОНФЕТТИ ---
+        function triggerConfetti() {
+            const colors = ['#39ff14', '#ffd700', '#ff003c', '#bc13fe', '#ffffff'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti-piece';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                confetti.style.height = (Math.random() * 10 + 5) + 'px';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+
         document.getElementById('gameModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
