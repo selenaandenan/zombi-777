@@ -1245,6 +1245,7 @@
                     } else if (rand < 20) { // 16% шанс на 3 черепа (гарантированный проигрыш)
                         finalSymbols = ['💀', '💀', '💀'];
                         isWin = false;
+                        win = 1; // Очень маленькое вознаграждение за 3 черепа
                     } else { // 80% шанс на рандомный мусор (без совпадений)
                         finalSymbols = [
                             symbols[Math.floor(Math.random() * symbols.length)],
@@ -1331,7 +1332,7 @@
                     sendToBot('win', win);
                 } else {
                     profile.losses++;
-                    resultMsg.innerHTML = currentGame === 'slots' && JSON.stringify(display.innerHTML).includes('💀') ? '💀 ТРОЙНОЙ ЧЕРЕП! ПРОИГРЫШ' : '💀 ПРОИГРЫШ';
+                    resultMsg.innerHTML = currentGame === 'slots' && JSON.stringify(display.innerHTML).includes('💀') ? '💀 ТРОЙНОЙ ЧЕРЕП! МАЛЫЙ ВЫИГРЫШ' : '💀 ПРОИГРЫШ';
                     resultMsg.className = 'result-message lose';
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                     if (!isFree) sendToBot('lose', bet);
