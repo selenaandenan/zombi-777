@@ -27,6 +27,9 @@
             --dark: #0a0a0a;
             --card-bg: rgba(20, 20, 20, 0.95);
             --glass: rgba(255, 255, 255, 0.05);
+            --shadow-green: rgba(57, 255, 20, 0.3);
+            --shadow-blood: rgba(255, 0, 60, 0.3);
+            --shadow-purple: rgba(188, 19, 254, 0.3);
         }
 
         body {
@@ -60,6 +63,18 @@
             opacity: 0.6;
         }
 
+        .particle:nth-child(2n) {
+            background: var(--neon-purple);
+            width: 3px;
+            height: 3px;
+        }
+
+        .particle:nth-child(3n) {
+            background: var(--blood);
+            width: 1px;
+            height: 1px;
+        }
+
         @keyframes floatParticle {
             0% { transform: translateY(100vh) translateX(0); opacity: 0; }
             10% { opacity: 0.8; }
@@ -78,9 +93,24 @@
             pointer-events: none;
         }
 
+        .fog-layer-2 {
+            position: fixed;
+            top: 0; left: 0; width: 200%; height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><filter id="fogFilter2"><feTurbulence baseFrequency="0.02" numOctaves="4" result="noise"/><feColorMatrix in="noise" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.1 0"/></filter><rect width="100%" height="100%" filter="url(%23fogFilter2)"/></svg>');
+            opacity: 0.15;
+            animation: fogMove2 60s linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+
         @keyframes fogMove {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
+        }
+
+        @keyframes fogMove2 {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
         }
 
         /* Кровавые капли */
@@ -92,6 +122,11 @@
             animation: dripBlood 6s infinite ease-in;
             z-index: 1;
             pointer-events: none;
+        }
+
+        .blood-drip:nth-child(2n) {
+            width: 3px;
+            animation-duration: 8s;
         }
 
         @keyframes dripBlood {
@@ -197,7 +232,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: 
-                0 0 20px rgba(57,255,20,0.3),
+                0 0 20px var(--shadow-green),
                 inset 0 0 20px rgba(57,255,20,0.1);
             backdrop-filter: blur(5px);
         }
@@ -211,6 +246,15 @@
             animation: balanceShine 3s infinite;
         }
 
+        .balance-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(57,255,20,0.05), transparent 70%);
+            pointer-events: none;
+        }
+
         @keyframes balanceShine {
             0% { transform: translateX(-100%) rotate(45deg); }
             100% { transform: translateX(100%) rotate(45deg); }
@@ -222,6 +266,8 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
         }
 
         .balance-value {
@@ -233,6 +279,8 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            position: relative;
+            z-index: 1;
         }
 
         .star-icon {
@@ -264,7 +312,7 @@
 
         .jackpot-banner:hover {
             transform: scale(1.02);
-            box-shadow: 0 0 30px rgba(255,0,60,0.5);
+            box-shadow: 0 0 30px var(--shadow-blood);
         }
 
         .jackpot-banner::before {
@@ -276,9 +324,23 @@
             animation: jackpotShine 2s infinite;
         }
 
+        .jackpot-banner::after {
+            content: '💰';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            animation: jackpotEmoji 2s infinite;
+        }
+
         @keyframes jackpotShine {
             0% { transform: translateX(-100%) rotate(45deg); }
             100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        @keyframes jackpotEmoji {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
 
         .jackpot-label {
@@ -288,6 +350,8 @@
             letter-spacing: 2px;
             margin-bottom: 5px;
             font-weight: bold;
+            position: relative;
+            z-index: 1;
         }
 
         .jackpot-amount {
@@ -295,6 +359,8 @@
             font-weight: 900;
             color: var(--gold);
             text-shadow: 0 0 20px var(--gold);
+            position: relative;
+            z-index: 1;
         }
 
         /* =========================================
@@ -326,7 +392,7 @@
             background: linear-gradient(135deg, var(--neon-green), var(--neon-purple));
             border-color: var(--neon-green);
             color: #000;
-            box-shadow: 0 0 25px rgba(57,255,20,0.5);
+            box-shadow: 0 0 25px var(--shadow-green);
             transform: translateY(-2px);
         }
 
@@ -371,15 +437,29 @@
             transition: left 0.5s;
         }
 
+        .game-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-purple));
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
         .game-card:hover::before {
             left: 100%;
+        }
+
+        .game-card:hover::after {
+            transform: scaleX(1);
         }
 
         .game-card:hover {
             border-color: var(--neon-green);
             transform: translateY(-8px) scale(1.05);
             box-shadow: 
-                0 10px 30px rgba(57,255,20,0.4),
+                0 10px 30px var(--shadow-green),
                 0 0 60px rgba(57,255,20,0.2);
         }
 
@@ -421,7 +501,7 @@
 
         .game-card.featured:hover {
             border-color: var(--blood);
-            box-shadow: 0 10px 30px rgba(255,0,60,0.4);
+            box-shadow: 0 10px 30px var(--shadow-blood);
         }
 
         .badge-hot {
@@ -459,12 +539,12 @@
             align-items: center;
             justify-content: center;
             font-size: 48px;
-            box-shadow: 0 0 30px rgba(57,255,20,0.5);
+            box-shadow: 0 0 30px var(--shadow-green);
             animation: avatarPulse 2s infinite;
         }
 
         @keyframes avatarPulse {
-            0%, 100% { box-shadow: 0 0 30px rgba(57,255,20,0.5); }
+            0%, 100% { box-shadow: 0 0 30px var(--shadow-green); }
             50% { box-shadow: 0 0 50px rgba(57,255,20,0.8); }
         }
 
@@ -494,6 +574,22 @@
             padding: 15px;
             text-align: center;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
         }
 
         .stat-card:hover {
@@ -554,7 +650,7 @@
             text-align: center;
             position: relative;
             box-shadow: 
-                0 0 50px rgba(57,255,20,0.3),
+                0 0 50px var(--shadow-green),
                 inset 0 0 50px rgba(57,255,20,0.1);
             animation: modalSlideUp 0.4s;
         }
@@ -628,7 +724,7 @@
 
         .bet-input:focus {
             border-color: var(--neon-green);
-            box-shadow: 0 0 15px rgba(57,255,20,0.3);
+            box-shadow: 0 0 15px var(--shadow-green);
             outline: none;
         }
 
@@ -643,7 +739,7 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 2px;
-            box-shadow: 0 0 25px rgba(57,255,20,0.5);
+            box-shadow: 0 0 25px var(--shadow-green);
             transition: all 0.3s;
             font-family: 'Orbitron', sans-serif;
         }
@@ -723,7 +819,7 @@
             border-radius: 10px;
             overflow: hidden;
             position: relative;
-            box-shadow: 0 0 10px rgba(57,255,20,0.2);
+            box-shadow: 0 0 10px var(--shadow-green);
         }
 
         .slot-strip {
@@ -797,7 +893,7 @@
                 var(--blood) 320deg 330deg, #000 330deg 340deg,
                 var(--blood) 340deg 350deg, #000 350deg 360deg
             );
-            box-shadow: 0 0 30px rgba(255,0,60,0.5);
+            box-shadow: 0 0 30px var(--shadow-blood);
             position: relative;
         }
 
@@ -894,7 +990,7 @@
             padding: 15px 25px;
             z-index: 2000;
             animation: notifSlide 0.5s;
-            box-shadow: 0 0 30px rgba(57,255,20,0.5);
+            box-shadow: 0 0 30px var(--shadow-green);
         }
 
         @keyframes notifSlide {
@@ -930,6 +1026,7 @@
     <!-- Фоновые эффекты -->
     <div class="bg-particles" id="particles"></div>
     <div class="fog-layer"></div>
+    <div class="fog-layer-2"></div>
 
     <div class="main-container">
         <!-- Логотип -->
